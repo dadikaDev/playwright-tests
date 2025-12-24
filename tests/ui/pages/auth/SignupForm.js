@@ -23,7 +23,7 @@ export class SignupForm {
         return this.page.locator("#newsletter");
     }
 
-    get offersCheckbox() {
+    get specialOffersCheckbox() {
         return this.page.locator("#optin");
     }
 
@@ -87,11 +87,11 @@ export class SignupForm {
         return this.page.locator("#mobile_number");
     }
 
-    get createAccountBtn() {
+    get createAccountButton() {
         return this.page.locator("[data-qa='create-account']");
     }
 
-    get continueBtn() {
+    get continueButton() {
         return this.page.locator("[data-qa='continue-button']");
     }
 
@@ -104,7 +104,7 @@ export class SignupForm {
         await this.emailInput.fill(user.email);
         await this.signupBtn.click();
         await this.newsletter.check();
-        await this.offersCheckbox.check();
+        await this.specialOffersCheckbox.check();
         await this.genderFemale.check();
         await this.accountPassword.fill(user.password);
         await this.day.selectOption("15");
@@ -119,8 +119,8 @@ export class SignupForm {
         await this.cityInput.fill(user.city);
         await this.zipcodeInput.fill(String(user.zipcode));
         await this.mobileInput.fill(`${user.mobile}`);
-        await this.createAccountBtn.click();
-        await this.continueBtn.click();
+        await this.createAccountButton.click();
+        await this.continueButton.click();
     }
 
     async signupBasicInfo(user) {

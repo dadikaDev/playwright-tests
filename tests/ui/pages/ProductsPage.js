@@ -1,17 +1,12 @@
-import { CartPage } from "./CartPage";
-import { ProductDetailPage } from "./ProductDetailPage";
-
+import { CartPage, Header, ProductDetailPage } from ".";
 export class ProductsPage {
     constructor(page) {
         this.page = page;
+        this.header = new Header(page);
     }
 
     get products() {
         return this.page.locator(".features_items .col-sm-4");
-    }
-
-    get cartLink() {
-        return this.page.getByRole("link", { name: / Cart/i });
     }
 
     get overlayLinks() {
@@ -38,16 +33,43 @@ export class ProductsPage {
         return this.page.locator(".single-products");
     }
 
+    mainCategory(main) {
+        return this.page.locator(`a[href='#${main}']`);
+    }
+
+    subCategory(sub) {
+        return this.page.getByRole("link", { name: sub });
+    }
+
+    get categoryHeader() {
+        return this.page.locator(".features_items h2.title");
+    }
+
+    get brandsHeader() {
+        return this.page.getByRole("heading", { name: "Brands" });
+    }
+
+    get brandTitleText() {
+        return this.page.locator(".title.text-center");
+    }
+
+    async selectMainCategory(main) {
+        await this.mainCategory(main).click();
+    }
+
+    async selectSubCategory(sub) {
+        await this.subCategory(sub).click();
+    }
+
+    async selectCategory(main, sub) {
+        await this.selectMainCategory(main);
+        await this.selectSubCategory(sub);
+    }
+
     async addProductToCartAndContinueShopping(index) {
         await this.products.nth(index).hover();
         await this.overlayLinks.nth(index).click();
         await this.continueShoppingBtn.click();
-        return this;
-    }
-
-    async goToCartPage() {
-        await this.cartLink.click();
-        return new CartPage(this.page);
     }
 
     getViewProductButton(productId) {
@@ -59,15 +81,15 @@ export class ProductsPage {
         return new ProductDetailPage(this.page);
     }
 
-    async searchProduct(productName) {
+    async searchForProduct(productName) {
         await this.searchInput.fill(productName);
         await this.searchButton.click();
+    }
 
-        const searchedCards = this.productCards.filter({
+    getSearchResults(productName) {
+        return this.productCards.filter({
             hasText: productName,
         });
-
-        return searchedCards;
     }
 
     async addProductToCart(index) {
@@ -75,7 +97,6 @@ export class ProductsPage {
         await product.hover();
         const addToCartButton = this.overlayLinks.nth(index);
         await addToCartButton.click();
-        return this;
     }
 
     async viewCart() {
@@ -83,180 +104,11 @@ export class ProductsPage {
         return new CartPage(this.page);
     }
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-    get productsLink() {
-        return this.page.getByRole("link", { name: / Products/i });
+    brandName(brand) {
+        return this.page.getByRole("link", { name: brand });
     }
 
-   
-
-    get productsList() {
-        return this.page.locator(
-            'div.features_items:has(h2:has-text("All Products"))'
-        );
-    }
-
-    get productName() {
-        return this.page.locator(".product-information h2");
-    }
-
-    get productCategory() {
-        return this.page.locator(".product-information p:first-of-type");
-    }
-
-    get productPrice() {
-        return this.page.locator("span span");
-    }
-
-    get productAvailability() {
-        return this.page.locator("b:has-text('Availability:')");
-    }
-
-    get productCondition() {
-        return this.page.locator("b:has-text('Condition:')");
-    }
-
-    get productBrand() {
-        return this.page.locator("b:has-text('Brand:')");
-    }
-
-    
-
-
-
-    get searchedProductsHeader() {
-        return this.page.locator("h2:has-text('Searched Products')");
-    }
-
-    
-
-
-
-
-
-    get categoryHeader() {
-        return this.page.locator("h2:has-text('Category')");
-    }
-
-    get brandsHeader() {
-        return this.page.getByRole("heading", { name: "Brands" });
-    }
-
-    get brandProducts() {
-        return this.page.locator(".features_items");
-    }
-
-    get brandTitleText() {
-        return this.page.locator(".title.text-center");
-    }
-
-    get reviewTitle() {
-        return this.page.getByRole("link", { name: "Write Your Review" });
-    }
-
-    get nameField() {
-        return this.page.locator("#name");
-    }
-
-    get emailField() {
-        return this.page.locator("#email");
-    }
-
-    get reviewField() {
-        return this.page.locator("#review");
-    }
-
-    get submitReviewButton() {
-        return this.page.getByRole("button", { name: /submit/i });
-    }
-
-    get successMessage() {
-        return this.page.getByText("Thank you for your review.");
-    }
-
-    
-
-
-
-
-
-    
-
-    
-
-
-
-
-
-
-
-
-
-
-    async expectProductInfoVisible() {
-        await expect(this.productName).toBeVisible();
-        await expect(this.productCategory).toBeVisible();
-        await expect(this.productPrice).toBeVisible();
-        await expect(this.productAvailability).toBeVisible();
-        await expect(this.productCondition).toBeVisible();
-        await expect(this.productBrand).toBeVisible();
-    }
-
-
-
-    async chooseCategory(mainCategory, subCategory) {
-        await expect(this.categoryHeader).toBeVisible();
-
-        const mainCat = this.page.locator(`a[href='#${mainCategory}']`);
-        await mainCat.click();
-
-        const subCat = this.page.getByRole("link", { name: subCategory });
-        await subCat.click();
-
-        await expect(
-            this.page.getByRole("heading", {
-                name: `${mainCategory} - ${subCategory} Products`,
-            })
-        ).toBeVisible();
-    }
-
-    async viewBrandProducts(brand) {
-        await expect(this.brandsHeader).toBeVisible();
-
-        await this.page.getByRole("link", { name: brand }).click();
-
-        await expect(this.page).toHaveURL(
-            new RegExp(`/brand_products/.*${brand.split(" ")[0]}`, "i")
-        );
-
-        await expect(this.brandTitleText).toContainText(brand);
-    }
-
-    async addReview(name, email, review) {
-        await expect(this.reviewTitle).toBeVisible();
-        await this.nameField.fill(name);
-        await this.emailField.fill(email);
-        await this.reviewField.fill(review);
-        await this.submitReviewButton.click();
-        await expect(this.successMessage).toBeVisible();
+    async selectBrand(brand) {
+        await this.brandName(brand).click();
     }
 }

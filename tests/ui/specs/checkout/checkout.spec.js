@@ -1,195 +1,127 @@
-import { test } from "@playwright/test";
-import { homePageIsVisible } from "../../../utils/home.js";
-import {
-    ProductsPage,
-    CartPage,
-    DeleteAccountPage,
-    CheckoutPage,
-    AuthNavigation,
-    SignupForm,
-    LoginForm,
-    HomePage,
-} from "../../../../pages/index.js";
-import { validUser } from "../../../data/users.js";
+import { test, expect } from "../../fixtures/homePageInit.fixture.js";
+import { HomePage } from "../../pages";
 import {
     firstProductIndex,
     expectedProductCount,
     paymentData,
-} from "../../../data/testData.js";
-
-test.beforeEach(async ({ page }) => {
-    await homePageIsVisible(page);
-});
+} from "../../data/testData.js";
 
 test.describe("Checkout & Order Placement Tests", () => {
+    let homePage;
+    let productsPage;
+
+    test.beforeEach(async ({ mainPage }) => {
+        homePage = new HomePage(mainPage);
+    });
+
     test("Test Case 1: Place Order: Register while Checkout", async ({
-        page,
+        testUser,
     }) => {
-        const productPage = new ProductsPage(page);
-        const cartPage = new CartPage(page);
-        const checkoutPage = new CheckoutPage(page);
-        const authNav = new AuthNavigation(page);
-        const signupForm = new SignupForm(page);
-        const deleteAccountPage = new DeleteAccountPage(page);
+        productsPage = await homePage.header.goToProductsPage();
+        await productsPage.addProductToCart(firstProductIndex);
 
-        await test.step("Add product to cart", async () => {
-            await productPage.addProductToCart(firstProductIndex);
-            await cartPage.viewCart();
-            await cartPage.expectProductsAddedToCart(expectedProductCount);
-        });
+        let cartPage = await productsPage.viewCart();
+        await expect(cartPage.cartItems).toHaveCount(expectedProductCount);
 
-        await test.step("Register while checking out", async () => {
-            await checkoutPage.goToCheckoutPage();
-            await authNav.openLoginFromModal();
-            await signupForm.signupWithFullForm(validUser);
-        });
+        await cartPage.proceedToCheckoutExpectingRegistration(testUser);
 
-        await test.step("Place order with payment", async () => {
-            await cartPage.goToCartPage();
-            await checkoutPage.goToCheckoutPage();
-            await checkoutPage.fillOrderDetailsPreventSubmit("Comment text");
-            await checkoutPage.fillPaymentDetails(paymentData);
-        });
+        cartPage = await homePage.header.goToCartPage();
+        const checkoutPage = await cartPage.goToCheckoutPage();
 
-        await test.step("Delete account after checkout", async () => {
-            await deleteAccountPage.deleteAccount();
-        });
+        const paymentPage = await checkoutPage.fillOrderDetails(
+            "Comment text",
+            { preventSubmit: true }
+        );
+        await paymentPage.fillPaymentDetails(paymentData);
+
+        await expect(paymentPage.successMessage).toHaveText(
+            "Your order has been placed successfully!"
+        );
+
+        await paymentPage.header.deleteAccount();
     });
 
     test("Test Case 2: Place Order: Register before Checkout", async ({
-        page,
+        testUser,
     }) => {
-        const authNav = new AuthNavigation(page);
-        const signupForm = new SignupForm(page);
-        const productPage = new ProductsPage(page);
-        const cartPage = new CartPage(page);
-        const checkoutPage = new CheckoutPage(page);
-        const homePage = new HomePage(page);
+        const signupLoginPage = await homePage.header.goToSignupLoginPage();
+        await signupLoginPage.registerUser(testUser);
 
-        await test.step("Register before checkout", async () => {
-            await authNav.goToAuth();
-            await signupForm.expectSignupPageVisible();
-            await signupForm.signupWithFullForm(validUser);
-        });
+        await expect(signupLoginPage.loginForm.loggedInText).toBeVisible();
 
-        await test.step("Add product to cart", async () => {
-            await productPage.addProductToCart(firstProductIndex);
-            await cartPage.viewCart();
-            await cartPage.expectProductsAddedToCart(expectedProductCount);
-        });
+        productsPage = await homePage.header.goToProductsPage();
+        await productsPage.addProductToCart(firstProductIndex);
 
-        await test.step("Place order with payment", async () => {
-            await checkoutPage.goToCheckoutPage();
-            await checkoutPage.fillOrderDetails("Comment text");
-            await checkoutPage.fillPaymentDetailsRealSubmit(paymentData);
-        });
+        const cartPage = await productsPage.viewCart();
+        await expect(cartPage.cartItems).toHaveCount(expectedProductCount);
 
-        await test.step("Logout after checkout", async () => {
-            await homePage.logout();
-        });
+        const checkoutPage = await cartPage.goToCheckoutPage();
+        const paymentPage = await checkoutPage.fillOrderDetails("Comment text");
+        await paymentPage.fillPaymentDetails(paymentData);
+
+        await paymentPage.header.logout();
+        await expect(homePage.header.loginAndSignupLink).toBeVisible();
     });
 
     test("Test Case 3: Place Order: Login before Checkout", async ({
-        page,
+        testUser,
     }) => {
-        const authNav = new AuthNavigation(page);
-        const loginForm = new LoginForm(page);
-        const productPage = new ProductsPage(page);
-        const cartPage = new CartPage(page);
-        const checkoutPage = new CheckoutPage(page);
-        const deleteAccountPage = new DeleteAccountPage(page);
+        const signupLoginPage = await homePage.header.goToSignupLoginPage();
+        await signupLoginPage.loginUser(testUser);
 
-        await test.step("Login before checkout", async () => {
-            await authNav.goToAuth();
-            await loginForm.expectLoginPageVisible();
-            await loginForm.login(validUser.email, validUser.password);
-            await loginForm.expectUserLoggedIn();
-        });
+        await expect(signupLoginPage.loginForm.loggedInText).toBeVisible();
 
-        await test.step("Add product to cart", async () => {
-            await productPage.addProductToCart(firstProductIndex);
-            await cartPage.viewCart();
-            await cartPage.expectProductsAddedToCart(expectedProductCount);
-        });
+        productsPage = await homePage.header.goToProductsPage();
+        await productsPage.addProductToCart(firstProductIndex);
 
-        await test.step("Place order with payment", async () => {
-            await checkoutPage.goToCheckoutPage();
-            await checkoutPage.fillOrderDetailsPreventSubmit("Comment text");
-            await checkoutPage.fillPaymentDetails(paymentData);
-        });
-        await test.step("Delete account after checkout", async () => {
-            await deleteAccountPage.deleteAccount();
-        });
+        const cartPage = await productsPage.viewCart();
+        await expect(cartPage.cartItems).toHaveCount(expectedProductCount);
+
+        const checkoutPage = await cartPage.goToCheckoutPage();
+        const paymentPage = await checkoutPage.fillOrderDetails("Comment text");
+        await paymentPage.fillPaymentDetails(paymentData);
+
+        await paymentPage.header.deleteAccount();
     });
+
     test("Test Case 4: Verify address details in checkout page", async ({
-        page,
+        testUser,
     }) => {
-        const authNav = new AuthNavigation(page);
-        const signupForm = new SignupForm(page);
-        const productPage = new ProductsPage(page);
-        const cartPage = new CartPage(page);
-        const checkoutPage = new CheckoutPage(page);
-        const deleteAccountPage = new DeleteAccountPage(page);
+        const signupLoginPage = await homePage.header.goToSignupLoginPage();
+        await signupLoginPage.registerUser(testUser);
 
-        await test.step("Register new user", async () => {
-            await authNav.goToAuth();
-            await signupForm.expectSignupPageVisible();
-            await signupForm.signupWithFullForm(validUser);
-        });
+        await expect(signupLoginPage.loginForm.loggedInText).toBeVisible();
 
-        await test.step("Add product to cart", async () => {
-            await productPage.addProductToCart(firstProductIndex);
-            await cartPage.viewCart();
-        });
+        productsPage = await homePage.header.goToProductsPage();
+        await productsPage.addProductToCart(firstProductIndex);
 
-        await test.step("Navigate to checkout page", async () => {
-            await checkoutPage.goToCheckoutPage();
-        });
+        const cartPage = await productsPage.viewCart();
+        const checkoutPage = await cartPage.goToCheckoutPage();
 
-        await test.step("Verify address details", async () => {
-            await checkoutPage.verifyAddressDetails(validUser);
-        });
+        await expect(checkoutPage.addressDelivery).toHaveText(testUser.address);
+        await expect(checkoutPage.addressInvoice).toHaveText(testUser.address);
 
-        await test.step("Delete account", async () => {
-            await deleteAccountPage.deleteAccount();
-        });
+        await checkoutPage.header.deleteAccount();
     });
 
     test("Test Case 5: Download Invoice after purchase order", async ({
-        page,
+        testUser,
     }) => {
-        const productPage = new ProductsPage(page);
-        const cartPage = new CartPage(page);
-        const checkoutPage = new CheckoutPage(page);
-        const authNav = new AuthNavigation(page);
-        const signupForm = new SignupForm(page);
-        const homePage = new HomePage(page);
+        productsPage = await homePage.header.goToProductsPage();
+        await productsPage.addProductToCart(firstProductIndex);
 
-        await test.step("Add product to cart", async () => {
-            await productPage.addProductToCart(firstProductIndex);
-            await cartPage.viewCart();
-            await cartPage.expectProductsAddedToCart(expectedProductCount);
-        });
+        let cartPage = await productsPage.viewCart();
+        await expect(cartPage.cartItems).toHaveCount(expectedProductCount);
 
-        await test.step("Register while checking out", async () => {
-            await checkoutPage.goToCheckoutPage();
-            await authNav.openLoginFromModal();
-            await signupForm.signupWithFullForm(validUser);
-        });
+        await cartPage.proceedToCheckoutExpectingRegistration(testUser);
 
-        await test.step("Place order with payment", async () => {
-            await cartPage.goToCartPage();
-            await checkoutPage.goToCheckoutPage();
-            await checkoutPage.fillOrderDetails("Comment");
-            await checkoutPage.fillPaymentDetailsRealSubmit(paymentData);
-        });
+        cartPage = await homePage.header.goToCartPage();
+        const checkoutPage = await cartPage.goToCheckoutPage();
 
-        await test.step("Download invoice", async () => {
-            await checkoutPage.downloadInvoice();
-        });
+        const paymentPage = await checkoutPage.fillOrderDetails("Comment text");
+        await paymentPage.fillPaymentDetails(paymentData);
+        await paymentPage.downloadInvoice();
 
-        await test.step("Logout after checkout", async () => {
-            await homePage.logout();
-        });
+        await paymentPage.header.logout();
     });
 });

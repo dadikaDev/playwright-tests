@@ -1,11 +1,9 @@
-import { SubscriptionSection } from "./SubscriptionSection";
-import { SignupLoginPage } from "./SignupLoginPage";
-import { DeleteAccountPage } from "./DeleteAccountPage";
-
+import { SubscriptionSection, SignupLoginPage, CheckoutPage, Header } from ".";
 export class CartPage {
     constructor(page) {
         this.page = page;
         this.subscription = new SubscriptionSection(page);
+        this.header = new Header(page);
     }
 
     get cartItems() {
@@ -28,51 +26,43 @@ export class CartPage {
         return this.page.locator(".cart_quantity_delete");
     }
 
-    get loginAndSignupLink() {
-        return this.page.getByRole("link", { name: /Signup \/ Login/i });
+    get proceedToCheckoutBtn() {
+        return this.page.locator(".check_out");
     }
 
-    async goToSignupLoginPage() {
-        await this.loginAndSignupLink.click();
-        return new SignupLoginPage(this.page);
-    }
-
-    async deleteAccount() {
-        const deleteAccountPage = new DeleteAccountPage(this.page);
-        await deleteAccountPage.deleteAccount();
+    get loginLinkInModal() {
+        return this.page.locator(".modal-content [href='/login']");
     }
 
     async removeProductFromCart(index = 0) {
         await this.removeFromCartButtons.nth(index).click();
     }
 
-
-
-
-
-
-
-
-
-
-    get cartLink() {
-        return this.page.getByRole("link", { name: / Cart/i });
+    async clickProceedToCheckout() {
+        await this.proceedToCheckoutBtn.click();
     }
 
-
-
-    get addRecItemBtn() {
-        return this.page
-            .locator(".carousel-inner")
-            .last()
-            .getByText("Add to cart")
-            .first();
+    async openLoginFromModal() {
+        await this.loginLinkInModal.click();
+        return new SignupLoginPage(this.page);
     }
 
+    async proceedToCheckoutExpectingRegistration(testUser) {
+        await this.clickProceedToCheckout();
+        const signupLoginPage = await this.openLoginFromModal();
+        await signupLoginPage.registerUser(testUser);
+    }
 
+    async goToCheckoutPage() {
+        await this.proceedToCheckoutBtn.click();
+        return new CheckoutPage(this.page);
+    }
 
-    async addRecommendedItem() {
-        await this.addRecItemBtn.click();
-        await this.viewCartFromRecsBtn.click();
+    async getProductQuantity() {
+        if ((await this.quantityInput.count()) > 0) {
+            return Number(await this.quantityInput.inputValue());
+        }
+
+        return Number((await this.quantityButton.textContent())?.trim() || "1");
     }
 }

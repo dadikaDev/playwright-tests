@@ -1,10 +1,11 @@
 export { CartPage } from "./CartPage";
 export { CheckoutPage } from "./CheckoutPage";
-export { DeleteAccountPage } from "./DeleteAccountPage";
+export { Header } from "./Header";
 export { HomePage } from "./HomePage";
+export { PaymentPage } from "./PaymentPage";
+export { ProductDetailPage } from "./ProductDetailPage";
 export { ProductsPage } from "./ProductsPage";
 export { SubscriptionSection } from "./SubscriptionSection";
-export { TestCasesPage } from "./TestCasesPage";
-export { AuthNavigation } from "./auth/AuthNavigation";
+export { SignupLoginPage } from "./auth/SignupLoginPage";
 export { LoginForm } from "./auth/LoginForm";
 export { SignupForm } from "./auth/SignupForm";

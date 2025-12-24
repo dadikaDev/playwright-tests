@@ -1,26 +1,33 @@
-import { expect } from "@playwright/test";
-
 export class SubscriptionSection {
   constructor(page) {
     this.page = page;
-    this.footer = page.locator("#footer");
-    this.subscriptionTitle = this.footer.locator("h2");
-    this.subscriptionInput = page.getByPlaceholder("Your email address");
-    this.subscribeButton = page.locator("#subscribe");
-    this.subscriptionSuccessMsg = page.locator("#success-subscribe");
   }
 
-  async expectVisible() {
+  get footer() {
+    return this.page.locator("#footer");
+  }
+  
+  get emailInput() {
+    return this.page.getByPlaceholder("Your email address");
+  }
+
+  get subscribeButton() {
+    return this.page.locator("#subscribe");
+  }
+
+  get successMessage() {
+    return this.page.locator("#success-subscribe");
+  }
+
+  async scrollToSection() {
     await this.footer.scrollIntoViewIfNeeded();
-    await expect(this.footer).toBeVisible();
-    await expect(this.subscriptionTitle).toBeVisible();
-    await expect(this.subscriptionTitle).toContainText("Subscription");
   }
 
-  async subscribe(email) {
-    await this.subscriptionInput.fill(email);
-    await expect(this.subscriptionSuccessMsg).toBeHidden();
+  async fillEmail(user) {
+    await this.emailInput.fill(user.email);
+  }
+
+  async subscribe() {
     await this.subscribeButton.click();
-    await expect(this.subscriptionSuccessMsg).toBeVisible();
   }
 }
